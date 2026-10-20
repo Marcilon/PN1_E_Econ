@@ -23,25 +23,52 @@
     .question { font-weight: bold; color: #1a202c; margin-bottom: 12px; font-size: 14px; line-height: 1.4; }
     .question-subject { display: inline-block; background: #e2e8f0; color: #2d3748; font-size: 11px; padding: 2px 6px; border-radius: 4px; margin-bottom: 6px; font-weight: bold; }
     
-    /* Linha de Opções */
-    .option-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; padding: 6px; border-radius: 6px; background: #f8fafc; transition: opacity 0.3s; }
-    .option-text { font-size: 13px; color: #2d3748; flex: 1; padding-right: 8px; }
-    
-    /* Raspadinha */
-    .scratch-container { position: relative; width: 110px; height: 38px; border-radius: 6px; overflow: hidden; flex-shrink: 0; }
-    .behind-content { 
-      position: absolute; width: 100%; height: 100%; 
-      display: flex; align-items: center; justify-content: center; 
-      font-weight: bold; font-size: 10px; text-align: center; border-radius: 6px;
+    /* Opções Clicáveis */
+    .option-row { 
+      display: flex; 
+      align-items: center; 
+      margin-bottom: 8px; 
+      padding: 10px 12px; 
+      border-radius: 8px; 
+      background: #f8fafc; 
+      border: 2px solid #e2e8f0; 
+      cursor: pointer; 
+      transition: all 0.2s ease;
     }
+    .option-row:hover { background: #edf2f7; border-color: #cbd5e0; }
     
-    .correct { background-color: #c6f6d5; color: #22543d; }
-    .wrong { background-color: #fed7d7; color: #742a2a; }
-    
-    canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2; touch-action: none; cursor: pointer; }
-    
-    /* Estado de Opção Bloqueada por já ter escolhido outra */
-    .disabled-option { opacity: 0.4; pointer-events: none; }
+    /* Estado Selecionado */
+    .option-row.selected {
+      background: #ebf8ff;
+      border-color: #3182ce;
+      box-shadow: 0 0 0 1px #3182ce;
+    }
+
+    .option-radio {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      border: 2px solid #a0aec0;
+      margin-right: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: all 0.2s ease;
+    }
+    .option-row.selected .option-radio {
+      border-color: #3182ce;
+      background-color: #3182ce;
+    }
+    .option-row.selected .option-radio::after {
+      content: '';
+      width: 6px;
+      height: 6px;
+      background: white;
+      border-radius: 50%;
+    }
+
+    .option-text { font-size: 13px; color: #2d3748; flex: 1; line-height: 1.3; }
 
     /* Botão Final */
     .finish-btn { background: #2b6cb0; color: white; border: none; padding: 15px; width: 100%; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 6px rgba(43, 108, 176, 0.3); }
@@ -76,18 +103,19 @@
 
   <script>
     // URL do fluxo do Power Automate
-    const powerAutomateUrl = "https://default73319f4289084b899f8d558cf4d5d7.76.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/31/workflows/a53fe912718f49a2b715266afaa8ac90/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=vh3gwHCs1Mjo40V3bu44lOr2sRQedsGjyHfmImpm7Xs";
-    // Banco de Questões - Engenharia Econômica (10 Questões Oficiais)
+    const powerAutomateUrl = "https://default73319f4289084b899f8d558cf4d5d7.76.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/12/workflows/908fa338e2e04870adda5272b92a467e/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=eN2PEGlrN6zSvv9MMwXUbMVBCHOeSOJ5G24_IXOZruM";
+
+    // Banco de Questões - Engenharia Econômica
     const questions = [
       {
         id: 1,
         subject: "Juros Simples e Compostos",
         title: "1) Um investidor aplicou R\$ 10.000,00 por um período de 6 meses. Na primeira opção, sob juros simples de 2% a.m., e na segunda opção, sob juros compostos de 2% a.m. Qual é a diferença entre os montantes finais obtidos ao fim do período?",
         options: [
-          { letter: "A", text: "R\$ 61,62", correct: true },
-          { letter: "B", text: "R\$ 126,16", correct: false },
-          { letter: "C", text: "R\$ 261,62", correct: false },
-          { letter: "D", text: "R\$ 0,00", correct: false }
+          { letter: "A", text: "R\$ 61,62" },
+          { letter: "B", text: "R\$ 126,16" },
+          { letter: "C", text: "R\$ 261,62" },
+          { letter: "D", text: "R\$ 0,00" }
         ]
       },
       {
@@ -95,10 +123,10 @@
         subject: "Taxas Nominais e Equivalentes",
         title: "2) Uma instituição financeira divulga uma taxa nominal de 24% ao ano com capitalização mensal. Qual é a taxa efetiva anual equivalente a essa aplicação?",
         options: [
-          { letter: "A", text: "24,00% a.a.", correct: false },
-          { letter: "B", text: "26,82% a.a.", correct: true },
-          { letter: "C", text: "25,44% a.a.", correct: false },
-          { letter: "D", text: "28,24% a.a.", correct: false }
+          { letter: "A", text: "24,00% a.a." },
+          { letter: "B", text: "26,82% a.a." },
+          { letter: "C", text: "25,44% a.a." },
+          { letter: "D", text: "28,24% a.a." }
         ]
       },
       {
@@ -106,10 +134,10 @@
         subject: "Sistemas de Amortização (SAC vs SAF)",
         title: "3) Um financiamento de R\$ 100.000,00 será quitado em 4 parcelas mensais à taxa de 2% a.m. Compare a primeira prestação no SAC com a prestação fixa do SAF (Price):",
         options: [
-          { letter: "A", text: "A primeira prestação no SAC (R\$ 27.000,00) é maior que no SAF (R\$ 26.262,38).", correct: true },
-          { letter: "B", text: "A primeira prestação no SAC (R\$ 25.000,00) é menor que no SAF (R\$ 26.262,38).", correct: false },
-          { letter: "C", text: "Ambas as prestações iniciais são iguais a R\$ 26.000,00.", correct: false },
-          { letter: "D", text: "A primeira prestação no SAC é de R\$ 27.000,00 e no SAF é de R\$ 25.000,00.", correct: false }
+          { letter: "A", text: "A primeira prestação no SAC (R\$ 25.000,00) é menor que no SAF (R\$ 26.262,38)." },
+          { letter: "B", text: "Ambas as prestações iniciais são perfeitamente iguais a R\$ 26.000,00." },
+          { letter: "C", text: "A primeira prestação no SAC (R\$ 27.000,00) é maior que a prestação fixa do SAF (R\$ 26.262,38)." },
+          { letter: "D", text: "A primeira prestação no SAC é de R\$ 25.000,00 e no SAF é de R\$ 27.000,00." }
         ]
       },
       {
@@ -117,10 +145,10 @@
         subject: "Sistema de Amortização Crescente (SACRE)",
         title: "4) No Sistema de Amortização Crescente (SACRE), como se comportam as prestações e a velocidade de amortização em comparação ao SAF tradicional?",
         options: [
-          { letter: "A", text: "As prestações são rigorosamente constantes do início ao fim e amortizam menos.", correct: false },
-          { letter: "B", text: "As prestações tendem a ser decrescentes após reajustes, amortizando o saldo mais rapidamente que o SAF.", correct: true },
-          { letter: "C", text: "O saldo devedor cresce exponencialmente até a metade do contrato.", correct: false },
-          { letter: "D", text: "O SACRE não calcula juros sobre o saldo devedor remanescente.", correct: false }
+          { letter: "A", text: "As prestações são rigorosamente constantes do início ao fim e amortizam menos." },
+          { letter: "B", text: "As prestações tendem a ser decrescentes após reajustes, amortizando o saldo mais rapidamente que o SAF." },
+          { letter: "C", text: "O saldo devedor cresce exponencialmente até a metade do contrato." },
+          { letter: "D", text: "O SACRE não calcula juros sobre o saldo devedor remanescente." }
         ]
       },
       {
@@ -128,10 +156,10 @@
         subject: "Análise de Viabilidade (VPL)",
         title: "5) Um projeto exige R\$ 50.000,00 de investimento inicial e gera fluxos líquidos de R\$ 30.000,00 (Ano 1) e R\$ 35.000,00 (Ano 2). Sob TMA de 10% a.a., o VPL é aproximadamente:",
         options: [
-          { letter: "A", text: "R\$ 6.198,35 (Projeto Viável)", correct: true },
-          { letter: "B", text: "R\$ 5.000,00 (Projeto Inviável)", correct: false },
-          { letter: "C", text: "R\$ 15.000,00 (Projeto Viável)", correct: false },
-          { letter: "D", text: "-R\$ 3.245,10 (Projeto Inviável)", correct: false }
+          { letter: "A", text: "R\$ 6.198,35 (Projeto Viável)" },
+          { letter: "B", text: "R\$ 5.000,00 (Projeto Inviável)" },
+          { letter: "C", text: "R\$ 15.000,00 (Projeto Viável)" },
+          { letter: "D", text: "-R\$ 3.245,10 (Projeto Inviável)" }
         ]
       },
       {
@@ -139,10 +167,10 @@
         subject: "Payback Simples vs Descontado",
         title: "6) Considere um investimento inicial de R\$ 100.000,00 com retornos uniformes de R\$ 40.000,00 por 3 anos (TMA = 10% a.a.). Qual a relação correta entre os paybacks?",
         options: [
-          { letter: "A", text: "Payback Simples = 2,5 anos; Payback Descontado = 2,5 anos.", correct: false },
-          { letter: "B", text: "Payback Simples = 2,5 anos; Payback Descontado > 2,5 anos.", correct: true },
-          { letter: "C", text: "Payback Simples = 3,0 anos; Payback Descontado = 2,0 anos.", correct: false },
-          { letter: "D", text: "Payback Simples = 2,0 anos; Payback Descontado = 2,5 anos.", correct: false }
+          { letter: "A", text: "Payback Simples = 2,5 anos; Payback Descontado = 2,5 anos." },
+          { letter: "B", text: "Payback Simples = 3,0 anos; Payback Descontado = 2,0 anos." },
+          { letter: "C", text: "Payback Simples = 2,0 anos; Payback Descontado = 2,5 anos." },
+          { letter: "D", text: "Payback Simples = 2,5 anos; Payback Descontado > 2,5 anos." }
         ]
       },
       {
@@ -150,32 +178,32 @@
         subject: "Índice de Lucratividade (ILL)",
         title: "7) Um projeto apresenta Valor Presente das Entradas de R\$ 180.000,00 para um Investimento Inicial de R\$ 150.000,00. Qual o valor do ILL e sua interpretação?",
         options: [
-          { letter: "A", text: "ILL = 0,83; O projeto destrói valor e deve ser rejeitado.", correct: false },
-          { letter: "B", text: "ILL = 1,20; Para cada R\$ 1,00 investido, retorna R\$ 1,20 em valor presente.", correct: true },
-          { letter: "C", text: "ILL = 0,20; O retorno é de apenas 20% do capital sem TMA.", correct: false },
-          { letter: "D", text: "ILL = 1,50; O projeto dobra o capital investido em 2 anos.", correct: false }
+          { letter: "A", text: "ILL = 0,83; O projeto destrói valor e deve ser rejeitado." },
+          { letter: "B", text: "ILL = 1,20; Para cada R\$ 1,00 investido, retorna R\$ 1,20 em valor presente." },
+          { letter: "C", text: "ILL = 0,20; O retorno é de apenas 20% do capital sem TMA." },
+          { letter: "D", text: "ILL = 1,50; O projeto dobra o capital investido em 2 anos." }
         ]
       },
       {
         id: 8,
-        subject: "Ponto de Equilíbrio",
-        title: "8) Custos Fixos de R\$ 40.000,00/mês, Custo Variável de R\$ 60,00/un. e Preço de R\$ 100,00/un. Para um Lucro Desejado de R\$ 10.000,00, o PEC e PEE são:",
+        subject: "Taxa Interna de Retorno Modificada (TIRM)",
+        title: "8) Um projeto exige R\$ 100.000,00 no ano 0 e gera fluxos de caixa de R\$ 50.000,00 no Ano 1 e R\$ 70.000,00 no Ano 2. Considerando uma taxa de reinvestimento de 10% a.a. (TMA), a Taxa Interna de Retorno Modificada (TIRM) é aproximadamente:",
         options: [
-          { letter: "A", text: "PEC = 1.000 unidades; PEE = 1.250 unidades.", correct: true },
-          { letter: "B", text: "PEC = 667 unidades; PEE = 1.000 unidades.", correct: false },
-          { letter: "C", text: "PEC = 1.250 unidades; PEE = 1.500 unidades.", correct: false },
-          { letter: "D", text: "PEC = 1.000 unidades; PEE = 800 unidades.", correct: false }
+          { letter: "A", text: "11,80% a.a." },
+          { letter: "B", text: "20,00% a.a." },
+          { letter: "C", text: "10,00% a.a." },
+          { letter: "D", text: "15,45% a.a." }
         ]
       },
       {
         id: 9,
-        subject: "Sistema Financeiro Nacional (SFN)",
-        title: "9) No SFN do Brasil, qual órgão fixa as diretrizes da política monetária/meta Selic e qual instituição executa operando no mercado aberto?",
+        subject: "Estrutura do Sistema Financeiro Nacional (SFN)",
+        title: "9) No Sistema Financeiro Nacional (SFN), o órgão colegiado responsável por fixar a meta da taxa Selic e o órgão fiscalizador do mercado de valores mobiliários (ações e fundos) são, respectivamente:",
         options: [
-          { letter: "A", text: "CMN fixa as diretrizes; Banco Central do Brasil (BACEN) executa.", correct: true },
-          { letter: "B", text: "CVM fixa as diretrizes; BNDES executa.", correct: false },
-          { letter: "C", text: "BACEN fixa as diretrizes e a Caixa Econômica Federal executa.", correct: false },
-          { letter: "D", text: "Banco do Brasil fixa as diretrizes; CMN executa.", correct: false }
+          { letter: "A", text: "CMN (Conselho Monetário Nacional) e BACEN (Banco Central do Brasil)." },
+          { letter: "B", text: "SUSEP e BNDES." },
+          { letter: "C", text: "COPOM (Comitê de Política Monetária) e CVM (Comissão de Valores Mobiliários)." },
+          { letter: "D", text: "Tesouro Nacional e Banco do Brasil." }
         ]
       },
       {
@@ -183,10 +211,10 @@
         subject: "Gestão de Risco",
         title: "10) Na gestão de riscos de projetos de engenharia, a avaliação do nível de criticidade no mapa de risco baseia-se na combinação de:",
         options: [
-          { letter: "A", text: "Custo fixo do projeto e taxa de depreciação dos equipamentos.", correct: false },
-          { letter: "B", text: "Probabilidade de ocorrência do evento e Impacto/Severidade nos objetivos.", correct: true },
-          { letter: "C", text: "Taxa interna de retorno e payback simples do empreendimento.", correct: false },
-          { letter: "D", text: "Flutuação do câmbio e índice inflacionário acumulado.", correct: false }
+          { letter: "A", text: "Custo fixo do projeto e taxa de depreciação dos equipamentos." },
+          { letter: "B", text: "Taxa interna de retorno e payback simples do empreendimento." },
+          { letter: "C", text: "Flutuação do câmbio e índice inflacionário acumulado." },
+          { letter: "D", text: "Probabilidade de ocorrência do evento e Impacto/Severidade nos objetivos." }
         ]
       }
     ];
@@ -224,94 +252,46 @@
           <div class="question">${q.title}</div>
         `;
         
-        q.options.forEach((opt, optIndex) => {
-          const statusClass = opt.correct ? 'correct' : 'wrong';
-          const statusText = opt.correct ? '★ CORRETO' : '❌ ERRADO';
-          const canvasId = `canvas-${q.id}-${optIndex}`;
-
+        q.options.forEach((opt) => {
           html += `
-            <div class="option-row" id="row-${q.id}-${optIndex}">
+            <div class="option-row" id="opt-${q.id}-${opt.letter}" onclick="selectOption(${q.id}, '${opt.letter}')">
+              <div class="option-radio"></div>
               <div class="option-text"><b>${opt.letter})</b> ${opt.text}</div>
-              <div class="scratch-container">
-                <div class="behind-content ${statusClass}">${statusText}</div>
-                <canvas id="${canvasId}" width="110" height="38"></canvas>
-              </div>
             </div>
           `;
         });
         
         card.innerHTML = html;
         container.appendChild(card);
-
-        q.options.forEach((_, optIndex) => {
-          initCanvas(`canvas-${q.id}-${optIndex}`, q.id, optIndex, q.options[optIndex].letter);
-        });
       });
     }
 
-    function initCanvas(canvasId, qId, optIndex, letter) {
-      const canvas = document.getElementById(canvasId);
-      if (!canvas) return;
-      const ctx = canvas.getContext('2d');
+    function selectOption(qId, letter) {
+      if (isSubmitted) return;
 
-      ctx.fillStyle = '#cbd5e0';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.fillStyle = '#4a5568';
-      ctx.font = 'bold 10px Arial';
-      ctx.textAlign = 'center';
-      ctx.fillText('RASPE AQUI', canvas.width / 2, 23);
+      const name = document.getElementById('studentName').value.trim();
+      const id = document.getElementById('studentId').value.trim();
 
-      let isDrawing = false;
-
-      function scratch(e) {
-        const name = document.getElementById('studentName').value.trim();
-        const id = document.getElementById('studentId').value.trim();
-
-        if (!name || !id) {
-          alert("⚠️ Preencha seu Nome e Matrícula/RA antes de começar a responder!");
-          isDrawing = false;
-          if(!name) document.getElementById('studentName').focus();
-          else document.getElementById('studentId').focus();
-          return;
-        }
-
-        if (selectedAnswers[qId] && selectedAnswers[qId] !== letter) {
-          return;
-        }
-
-        if (!isDrawing) return;
-        e.preventDefault();
-        
-        if (!selectedAnswers[qId]) {
-          selectedAnswers[qId] = letter;
-          lockOtherOptions(qId, optIndex);
-        }
-
-        const rect = canvas.getBoundingClientRect();
-        const touch = e.touches ? e.touches[0] : e;
-        const x = (touch.clientX - rect.left) * (canvas.width / rect.width);
-        const y = (touch.clientY - rect.top) * (canvas.height / rect.height);
-
-        ctx.globalCompositeOperation = 'destination-out';
-        ctx.beginPath();
-        ctx.arc(x, y, 12, 0, Math.PI * 2);
-        ctx.fill();
+      if (!name || !id) {
+        alert("⚠️ Preencha seu Nome e Matrícula/RA antes de selecionar as respostas!");
+        if(!name) document.getElementById('studentName').focus();
+        else document.getElementById('studentId').focus();
+        return;
       }
 
-      canvas.addEventListener('touchstart', (e) => { isDrawing = true; scratch(e); });
-      canvas.addEventListener('touchmove', scratch);
-      canvas.addEventListener('touchend', () => { isDrawing = false; });
-      canvas.addEventListener('mousedown', (e) => { isDrawing = true; scratch(e); });
-      canvas.addEventListener('mousemove', scratch);
-      canvas.addEventListener('mouseup', () => { isDrawing = false; });
-    }
+      // Atualiza a resposta selecionada
+      selectedAnswers[qId] = letter;
 
-    function lockOtherOptions(qId, chosenOptIndex) {
+      // Atualiza a interface gráfica destacando a nova opção
       const q = questions.find(item => item.id === qId);
-      q.options.forEach((_, optIndex) => {
-        if (optIndex !== chosenOptIndex) {
-          const row = document.getElementById(`row-${qId}-${optIndex}`);
-          if (row) row.classList.add('disabled-option');
+      q.options.forEach((opt) => {
+        const row = document.getElementById(`opt-${qId}-${opt.letter}`);
+        if (row) {
+          if (opt.letter === letter) {
+            row.classList.add('selected');
+          } else {
+            row.classList.remove('selected');
+          }
         }
       });
     }
@@ -401,7 +381,6 @@
     });
 
     window.onload = function() {
-      // Inicializa sempre a renderização das questões
       renderQuiz();
     };
   </script>
