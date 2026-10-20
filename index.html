@@ -230,6 +230,11 @@
       sessionStorage.setItem("matricula_temp", id);
       sessionStorage.setItem("respostas_temp", JSON.stringify(selectedAnswers));
       sessionStorage.setItem("trocas_tela_temp", tabSwitchCount.toString());
+
+      // Ativa a flag de início assim que o aluno preenche o nome ou matrícula
+      if (name.trim().length > 0 || id.trim().length > 0) {
+        localStorage.setItem("prova_eng_econ_iniciada", "true");
+      }
     }
 
     function resetarTesteDebug() {
@@ -294,7 +299,6 @@
         return;
       }
 
-      // Ativa a flag de início da prova no momento em que o aluno marca a primeira resposta
       localStorage.setItem("prova_eng_econ_iniciada", "true");
 
       selectedAnswers[qId] = letter;
@@ -403,7 +407,7 @@
       return false;
     }
 
-    // Monitoramento Anti-Colação (Troca de Abas)
+    // Monitoramento Anti-Colação (Troca de Abas / Minimização)
     document.addEventListener("visibilitychange", function() {
       if (document.hidden && !isSubmitted && localStorage.getItem("prova_eng_econ_enviada") !== "true" && localStorage.getItem("prova_eng_econ_iniciada") === "true") {
         tabSwitchCount++;
