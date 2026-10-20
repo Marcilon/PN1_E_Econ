@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Verificação de Aprendizagem - Engenharia Econômica - Prof. Marcilon Fonseca</title>
+  
+  <style>
+    * { box-sizing: border-box; user-select: none; -webkit-user-select: none; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; background: #f4f6f9; margin: 0; padding: 15px; }
+    
+    h2 { text-align: center; color: #1a365d; margin-bottom: 5px; font-size: 20px; }
+    p.sub { text-align: center; color: #4a5568; font-size: 13px; margin-top: 0; margin-bottom: 15px; }
+    
+    /* Box de Identificação do Aluno */
+    .setup-box { background: #ffffff; padding: 15px; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.08); border-left: 5px solid #2b6cb0; }
+    .setup-box label { font-size: 13px; color: #2d3748; font-weight: bold; display: block; margin-top: 8px; }
+    .setup-box input { width: 100%; padding: 10px; font-size: 15px; border: 1px solid #cbd5e0; border-radius: 6px; margin-top: 4px; outline: none; }
+    .setup-box input:focus { border-color: #2b6cb0; }
+
+    /* Cards de Questões */
+    .card { background: white; border-radius: 12px; padding: 15px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+    .question { font-weight: bold; color: #1a202c; margin-bottom: 12px; font-size: 14px; line-height: 1.4; }
+    
+    /* Linha de Opções */
+    .option-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; padding: 6px; border-radius: 6px; background: #f8fafc; transition: opacity 0.3s; }
+    .option-text { font-size: 13px; color: #2d3748; flex: 1; padding-right: 8px; }
+    
+    /* Raspadinha */
+    .scratch-container { position: relative; width: 100px; height: 38px; border-radius: 6px; overflow: hidden; flex-shrink: 0; }
+    .behind-content { 
+      position: absolute; width: 100%; height: 100%; 
+      display: flex; align-items: center; justify-content: center; 
+      font-weight: bold; font-size: 10px; text-align: center; border-radius: 6px;
+    }
+    
+    .correct { background-color: #c6f6d5; color: #22543d; }
+    .wrong { background-color: #fed7d7; color: #742a2a; }
+    
+    canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2; touch-action: none; cursor: pointer; }
+    
+    /* Estado de Opção Bloqueada por já ter escolhido outra */
+    .disabled-option { opacity: 0.4; pointer-events: none; }
+
+    /* Botão Final */
+    .finish-btn { background: #2b6cb0; color: white; border: none; padding: 15px; width: 100%; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 6px rgba(43, 108, 176, 0.3); }
+    .finish-btn:disabled { background: #a0aec0; }
+
+    /* Tela de Bloqueio */
+    #bloqueio { text-align: center; padding: 40px 20px; color: #721c24; background-color: #f8d7da; border: 1px solid #f5c6cb; border-radius: 8px; margin-top: 30px; }
+  </style>
+</head>
+<body>
+
+  <div id="main-content">
+    <h2>Verificação de Aprendizagem - Engenharia Econômica</h2>
+    <p class="sub">Prof. Marcilon Fonseca de Lima - PUC Goiás</p>
+
+    <div class="setup-box">
+      <label for="studentName">Nome Completo do Aluno:</label>
+      <input type="text" id="studentName" placeholder="Digite seu nome completo">
+      
+      <label for="studentId">Matrícula / RA:</label>
+      <input type="text" id="studentId" placeholder="Digite sua matrícula">
+    </div>
+
+    <div id="quiz-container"></div>
+
+    <button class="finish-btn" onclick="submitResults()">Enviar Respostas</button>
+  </div>
+
+  <script>
+    // URL do fluxo do Power Automate para a prova de Engenharia Econômica
+    const powerAutomateUrl = "https://default73319f4289084b899f8d558cf4d5d7.76.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/31/workflows/a53fe912718f49a2b715266afaa8ac90/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=vh3gwHCs1Mjo40V3bu44lOr2sRQedsGjyHfmImpm7Xs";
+
+    // --- TRAVA ANTI-RECARREGAMENTO (localStorage) ---
+    if (localStorage.getItem("prova_eng_economica_bloqueada") === "true") {
+      document.addEventListener("DOMContentLoaded", function() {
+        exibirTelaBloqueio("Você já iniciou ou enviou esta avaliação anteriormente. Não é permitido recarregar a página para refazer a raspadinha.");
+      });
+    } else {
+      localStorage.setItem("prova_eng_economica_bloqueada", "true");
+    }
+
+    // Banco de Questões - Engenharia Econômica
+    const questions = [
+      {
+        id: 1,
+        title: "1) Um investidor aplicou R$ 10.000,00 por um período de 6 meses. Na opção 1, sob juros simples de 2% a.m., e na opção 2, sob juros compostos de 2% a.m. Qual a diferença entre os montantes finais?",
+        options: [
+          { letter: "A", text: "R$ 61,62", correct: true },
+          { letter: "B", text: "R$ 126,16", correct: false },
+          { letter: "C", text: "R$ 261,62", correct: false },
+          { letter: "D", text: "R$ 0,00", correct: false }
+        ]
+      },
+      {
+        id: 2,
+        title: "2) Uma instituição financeira divulga uma taxa nominal de 24% ao ano com capitalização mensal. Qual é a taxa efetiva anual equivalente?",
+        options: [
+          { letter: "A", text: "24,00% a.a.", correct: false },
+          { letter: "B", text: "26,82% a.a.", correct: true },
+          { letter: "C", text: "25,44% a.a.", correct: false },
+          { letter: "D", text: "28,24% a.a.", correct: false }
+        ]
+      },
+      {
+        id: 3,
+        title: "3) Um financiamento de R$ 100.000,00 será quitado em 4 parcelas mensais à taxa de 2% a.m. Comparando o SAC e o SAF (Tabela Price), pode-se afirmar que:",
+        options: [
+          { letter: "A", text: "A primeira prestação no SAC (R$ 27.000,00) é maior que a prestação no SAF (R$ 26.262,38).", correct: true },
+          { letter: "B", text: "A primeira prestação no SAC (R$ 25.000,00) é menor que a prestação no SAF (R$ 26.262,38).", correct: false },
+          { letter: "C", text: "Ambas as prestações iniciais são iguais a R$ 26.000,00.", correct: false },
+          { letter: "D", text: "A primeira prestação no SAC é de R$ 27.000,00 e no SAF é de R$ 25.000,00.", correct: false }
+        ]
+      },
+      {
+        id: 4,
+        title: "4) No Sistema de Amortização Crescente (SACRE), como se comportam as prestações e a amortização em relação ao SAF tradicional?",
+        options: [
+          { letter: "A", text: "As prestações são constantes do início ao fim e amortizam menos que o SAF.", correct: false },
+          { letter: "B", text: "As prestações tendem a ser decrescentes após reajustes, amortizando o saldo devedor mais rapidamente que o SAF.", correct: true },
+          { letter: "C", text: "O saldo devedor cresce exponencialmente até a metade do contrato.", correct: false },
+          { letter: "D", text: "O SACRE não calcula juros sobre o saldo devedor remanescente.", correct: false }
+        ]
+      },
+      {
+        id: 5,
+        title: "5) Um projeto exige R$ 50.000,00 e gera fluxos de R$ 30.000,00 no Ano 1 e R$ 35.000,00 no Ano 2. Com TMA de 10% a.a., qual é o VPL?",
+        options: [
+          { letter: "A", text: "R$ 6.198,35 (Projeto Viável)", correct: true },
+          { letter: "B", text: "R$ 5.000,00 (Projeto Inviável)", correct: false },
+          { letter: "C", text: "R$ 15.000,00 (Projeto Viável)", correct: false },
+          { letter: "D", text: "-R$ 3.245,10 (Projeto Inviável)", correct: false }
+        ]
+      },
+      {
+        id: 6,
+        title: "6) Para um investimento de R$ 100.000,00 com retornos anuais de R$ 40.000,00 por 3 anos e TMA de 10% a.a., qual a relação entre os Paybacks?",
+        options: [
+          { letter: "A", text: "Payback Simples = 2,5 anos; Payback Descontado = 2,5 anos.", correct: false },
+          { letter: "B", text: "Payback Simples = 2,5 anos; Payback Descontado > 2,5 anos.", correct: true },
+          { letter: "C", text: "Payback Simples = 3,0 anos; Payback Descontado = 2,0 anos.", correct: false },
+          { letter: "D", text: "Payback Simples = 2,0 anos; Payback Descontado = 2,5 anos.", correct: false }
+        ]
+      },
+      {
+        id: 7,
+        title: "7) Se o Valor Presente dos Fluxos de Entrada é de R$ 180.000,00 para um Investimento de R$ 150.000,00, qual o valor e significado do ILL?",
+        options: [
+          { letter: "A", text: "ILL = 0,83; O projeto destrói valor e deve ser rejeitado.", correct: false },
+          { letter: "B", text: "ILL = 1,20; Para cada R$ 1,00 investido, o projeto retorna R$ 1,20 em valor presente.", correct: true },
+          { letter: "C", text: "ILL = 0,20; O retorno é de apenas 20% do capital sem considerar a TMA.", correct: false },
+          { letter: "D", text: "ILL = 1,50; O projeto dobra o capital investido em 2 anos.", correct: false }
+        ]
+      },
+      {
+        id: 8,
+        title: "8) Com Custos Fixos de R$ 40.000, Custo Variável de R$ 60 e Preço de R$ 100, para um Lucro Econômico de R$ 10.000, quais são o PEC e PEE?",
+        options: [
+          { letter: "A", text: "PEC = 1.000 unidades; PEE = 1.250 unidades.", correct: true },
+          { letter: "B", text: "PEC = 667 unidades; PEE = 1.000 unidades.", correct: false },
+          { letter: "C", text: "PEC = 1.250 unidades; PEE = 1.500 unidades.", correct: false },
+          { letter: "D", text: "PEC = 1.000 unidades; PEE = 800 unidades.", correct: false }
+        ]
+      },
+      {
+        id: 9,
+        title: "9) No Sistema Financeiro Nacional (SFN), qual órgão fixa as diretrizes monetárias/meta da Selic e qual o executa no mercado aberto?",
+        options: [
+          { letter: "A", text: "CMN fixa as diretrizes; Banco Central do Brasil (BACEN) executa.", correct: true },
+          { letter: "B", text: "CVM fixa as diretrizes; BNDES executa.", correct: false },
+          { letter: "C", text: "BACEN fixa as diretrizes; Caixa Econômica Federal executa.", correct: false },
+          { letter: "D", text: "Banco do Brasil fixa as diretrizes; CMN executa.", correct: false }
+        ]
+      },
+      {
+        id: 10,
+        title: "10) Na Gestão de Risco de projetos, a avaliação do nível de criticidade de um risco prioritário no Mapa de Risco baseia-se fundamentalmente em:",
+        options: [
+          { letter: "A", text: "Custo fixo do projeto e taxa de depreciação dos equipamentos.", correct: false },
+          { letter: "B", text: "Probabilidade de ocorrência do evento e Impacto/Severidade nos objetivos do projeto.", correct: true },
+          { letter: "C", text: "Taxa interna de retorno e payback simples do empreendimento.", correct: false },
+          { letter: "D", text: "Flutuação do câmbio e índice inflacionário acumulado.", correct: false }
+        ]
+      }
+    ];
+
+    let selectedAnswers = {}; 
+    let isSubmitted = false;
+    let tabSwitchCount = 0;
+
+    // --- ALERTA AO TENTAR SAIR/ATUALIZAR (beforeunload) ---
+    window.addEventListener("beforeunload", function (e) {
+      if (!isSubmitted) {
+        e.preventDefault();
+        e.returnValue = "Se você sair ou recarregar, sua prova será bloqueada e as respostas registradas serão perdidas!";
+        return e.returnValue;
+      }
+    });
+
+    function renderQuiz() {
+      const container = document.getElementById('quiz-container');
+      if (!container) return;
+      container.innerHTML = '';
+      
+      questions.forEach((q) => {
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.id = `question-card-${q.id}`;
+        
+        let html = `<div class="question">${q.title}</div>`;
+        
+        q.options.forEach((opt, optIndex) => {
+          const statusClass = opt.correct ? 'correct' : 'wrong';
+          const statusText = opt.correct ? '★ CORRETO' : '❌ ERRADO';
+          const canvasId = `canvas-${q.id}-${optIndex}`;
+
+          html += `
+            <div class="option-row" id="row-${q.id}-${optIndex}">
+              <div class="option-text"><b>${opt.letter})</b> ${opt.text}</div>
+              <div class="scratch-container">
+                <div class="behind-content ${statusClass}">${statusText}</div>
+                <canvas id="${canvasId}" width="100" height="38"></canvas>
+              </div>
+            </div>
+          `;
+        });
+        
+        card.innerHTML = html;
+        container.appendChild(card);
+
+        q.options.forEach((_, optIndex) => {
+          initCanvas(`canvas-${q.id}-${optIndex}`, q.id, optIndex, q.options[optIndex].letter);
+        });
+      });
+    }
+
+    function initCanvas(canvasId, qId, optIndex, letter) {
+      const canvas = document.getElementById(canvasId);
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+
+      ctx.fillStyle = '#cbd5e0';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = '#4a5568';
+      ctx.font = 'bold 10px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText('RASPE AQUI', canvas.width / 2, 23);
+
+      let isDrawing = false;
+
+      function scratch(e) {
+        const name = document.getElementById('studentName').value.trim();
+        const id = document.getElementById('studentId').value.trim();
+
+        if (!name || !id) {
+          alert("⚠️ Preencha seu Nome e Matrícula/RA antes de começar a responder!");
+          isDrawing = false;
+          if(!name) document.getElementById('studentName').focus();
+          else document.getElementById('studentId').focus();
+          return;
+        }
+
+        if (selectedAnswers[qId] && selectedAnswers[qId] !== letter) {
+          return;
+        }
+
+        if (!isDrawing) return;
+        e.preventDefault();
+        
+        if (!selectedAnswers[qId]) {
+          selectedAnswers[qId] = letter;
+          lockOtherOptions(qId, optIndex);
+        }
+
+        const rect = canvas.getBoundingClientRect();
+        const touch = e.touches ? e.touches[0] : e;
+        const x = (touch.clientX - rect.left) * (canvas.width / rect.width);
+        const y = (touch.clientY - rect.top) * (canvas.height / rect.height);
+
+        ctx.globalCompositeOperation = 'destination-out';
+        ctx.beginPath();
+        ctx.arc(x, y, 12, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      canvas.addEventListener('touchstart', (e) => { isDrawing = true; scratch(e); });
+      canvas.addEventListener('touchmove', scratch);
+      canvas.addEventListener('touchend', () => { isDrawing = false; });
+      canvas.addEventListener('mousedown', (e) => { isDrawing = true; scratch(e); });
+      canvas.addEventListener('mousemove', scratch);
+      canvas.addEventListener('mouseup', () => { isDrawing = false; });
+    }
+
+    function lockOtherOptions(qId, chosenOptIndex) {
+      const q = questions.find(item => item.id === qId);
+      q.options.forEach((_, optIndex) => {
+        if (optIndex !== chosenOptIndex) {
+          const row = document.getElementById(`row-${qId}-${optIndex}`);
+          if (row) row.classList.add('disabled-option');
+        }
+      });
+    }
+
+    function submitResults(isForced = false) {
+      if (isSubmitted) return;
+
+      let name = document.getElementById('studentName').value.trim();
+      let studentId = document.getElementById('studentId').value.trim();
+
+      if ((!name || !studentId) && !isForced) {
+        alert("Por favor, preencha seu nome e sua matrícula antes de enviar.");
+        return;
+      }
+
+      if (Object.keys(selectedAnswers).length < questions.length && !isForced) {
+        if(!confirm("Você ainda não respondeu todas as questões. Deseja enviar assim mesmo?")) {
+          return;
+        }
+      }
+
+      if (isForced && !name) {
+        name = "ALUNO NÃO IDENTIFICADO (Bloqueado por troca de tela)";
+        studentId = "N/A";
+      }
+
+      const btn = document.querySelector('.finish-btn');
+      if (btn) {
+        btn.innerText = "Enviando...";
+        btn.disabled = true;
+      }
+
+      isSubmitted = true;
+
+      const payload = {
+        Data: new Date().toISOString().split('T')[0],
+        Aluno: name,
+        Matricula: studentId,
+        Respostas: JSON.stringify(selectedAnswers),
+        TrocasDeTela: tabSwitchCount
+      };
+
+      fetch(powerAutomateUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+      .then(response => {
+        if (response.ok) {
+          localStorage.removeItem("prova_eng_economica_bloqueada");
+
+          document.getElementById("main-content").innerHTML = `
+            <div style="text-align:center; color:#155724; background:#d4edda; padding:30px; border-radius:8px; margin-top: 30px;">
+              <h2>✅ Avaliação Enviada com Sucesso!</h2>
+              <p>Obrigado, <strong>${name}</strong>. Suas respostas de Engenharia Econômica foram registradas na planilha do professor.</p>
+            </div>
+          `;
+        } else {
+          throw new Error("Erro na requisição");
+        }
+      })
+      .catch(error => {
+        console.error(error);
+        alert("Erro ao conectar com o servidor. Tente novamente.");
+        isSubmitted = false;
+        if (btn) {
+          btn.innerText = "Enviar Respostas";
+          btn.disabled = false;
+        }
+      });
+    }
+
+    // Monitoramento Anti-Colação (Detecta se o aluno trocou de aba ou minimizou)
+    document.addEventListener("visibilitychange", function() {
+      if (document.hidden && !isSubmitted) {
+        tabSwitchCount++;
+
+        if (tabSwitchCount === 1) {
+          alert("⚠️ ATENÇÃO: Você saiu da tela do teste!\n\nO professor foi notificado. (1ª infração: penalidade registrada).");
+        } 
+        else if (tabSwitchCount === 2) {
+          alert("⚠️ AVISO CRÍTICO: Segunda saída detectada!\n\nSe você sair mais uma vez, o teste será BLOQUEADO.");
+        } 
+        else if (tabSwitchCount >= 3) {
+          alert("🚫 TESTE BLOQUEADO!\n\nVocê excedeu o limite de saídas da tela. Seu teste foi encerrado.");
+          
+          document.body.style.pointerEvents = "none";
+          document.body.style.opacity = "0.4";
+
+          submitResults(true);
+        }
+      }
+    });
+
+    function exibirTelaBloqueio(mensagem) {
+      document.body.innerHTML = `
+        <div style="max-width: 600px; margin: auto; padding: 20px;">
+          <div id="bloqueio">
+            <h2>⚠️ Acesso Restrito</h2>
+            <p>${mensagem}</p>
+          </div>
+        </div>
+      `;
+    }
+
+    window.onload = function() {
+      if (localStorage.getItem("prova_eng_economica_bloqueada") !== "true") {
+        renderQuiz();
+      }
+    };
+  </script>
+</body>
+</html>
